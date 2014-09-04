@@ -9,6 +9,7 @@ module GoodData
 
         def create_loads(columns, source_prefix=nil)
           @source = source_prefix
+          columns ||= {}
           return create(
             LOAD_INFO_NAME,
             columns.map {|k, v| {'name' => k}},
@@ -112,6 +113,7 @@ module GoodData
           meta = options[:meta]
           prefix = options[:prefix]
           fields_string = fields.map{|f| "#{f['name']} #{TYPE_MAPPING[f['type']] || DEFAULT_TYPE}"}.join(", ")
+          fields_string += ',' unless fields_string.empty?
           meta_cols = col_strings(META_COLUMNS)
           hist_cols = historization ? ", #{col_strings(HISTORIZATION_COLUMNS)}" : ""
 
@@ -120,7 +122,7 @@ module GoodData
           id_col = historization ? "" : "#{ID_COLUMN.keys[0]} #{ID_COLUMN.values[0]},"
 
           return "CREATE TABLE IF NOT EXISTS #{sql_table_name(table, :historization => historization, :meta => meta, :prefix => prefix)}
-          (#{id_col} #{fields_string}, #{meta_cols} #{hist_cols})"
+          (#{id_col} #{fields_string} #{meta_cols} #{hist_cols})"
         end
 
         def column_count(object, column)

@@ -1,6 +1,9 @@
 require 'spec_helper'
 require 'sequel'
 
+FILE1_PATH = File.expand_path('spec/Bike.csv')
+FILE2_PATH = File.expand_path('spec/Bike2.csv')
+
 describe GoodData::Connectors::Storage::Dss do
   def get_params(prefix, historization=false)
     pars = {
@@ -69,7 +72,7 @@ describe GoodData::Connectors::Storage::Dss do
       dss = GoodData::Connectors::Storage::Dss.new(nil, get_params(prefix))
 
       # do the load params and load the data
-      load_params = get_load_params(source, 'spec/Bike.csv')
+      load_params = get_load_params(source, FILE1_PATH)
       dss.save_full(load_params)
 
       # check that it's there
@@ -98,7 +101,7 @@ describe GoodData::Connectors::Storage::Dss do
       dss = GoodData::Connectors::Storage::Dss.new(nil, get_params(prefix, true))
 
       # do the load params and load the data
-      load_params = get_load_params(source, 'spec/Bike.csv')
+      load_params = get_load_params(source, FILE1_PATH)
       dss.save_full(load_params)
 
       Sequel.connect ENV["jdbc_url"], :username => ENV["gdc_username"], :password => ENV["gdc_password"] do |conn|
@@ -111,7 +114,7 @@ describe GoodData::Connectors::Storage::Dss do
       end
 
       # save another load
-      dss.save_full(get_load_params(source,'spec/Bike2.csv'))
+      dss.save_full(get_load_params(source, FILE2_PATH))
       Sequel.connect ENV["jdbc_url"], :username => ENV["gdc_username"], :password => ENV["gdc_password"] do |conn|
         table_name = "#{prefix}_#{source}_Bike"
 
@@ -136,7 +139,7 @@ describe GoodData::Connectors::Storage::Dss do
       dss = GoodData::Connectors::Storage::Dss.new(nil, get_params(prefix))
 
       # do the load params and load the data
-      load_params = get_load_params(source, 'spec/Bike.csv', true)
+      load_params = get_load_params(source, FILE1_PATH, true)
       dss.save_full(load_params)
       table_name = "#{prefix}_#{source}_meta_loads"
 
