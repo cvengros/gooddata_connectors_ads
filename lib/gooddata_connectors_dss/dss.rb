@@ -45,7 +45,7 @@ module GoodData
 
         def create_tables(source, info, historized_objects)
           # create the load table if it doesn't exist yet
-          create_sql = @generator.create_loads(info['objects'])
+          create_sql = @generator.create_loads(info['meta'], source)
           execute(create_sql)
 
           # create the tables one by one

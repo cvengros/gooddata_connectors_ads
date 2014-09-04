@@ -31,8 +31,8 @@ describe GoodData::Connectors::Storage::Dss do
     return pars
   end
 
-  def get_load_params(source, csv)
-    {
+  def get_load_params(source, csv, meta=false)
+    pars = {
       'local_files' => {
         source => {
           "objects" => {
@@ -53,6 +53,13 @@ describe GoodData::Connectors::Storage::Dss do
         }
       }
     }
+
+    if meta
+      pars['local_files'][source]['meta'] = {
+        "something_load_meta" => "load meta value"
+      }
+    end
+    return pars
   end
   describe "save_full" do
     it "saves all the stuff to dss with no history" do
@@ -122,5 +129,29 @@ describe GoodData::Connectors::Storage::Dss do
 
       end
     end
+    it "saves the metadata to a loads table" do
+      # create a dss instance
+      prefix = "testing#{rand(999)}"
+      source = "test_source"
+      dss = GoodData::Connectors::Storage::Dss.new(nil, get_params(prefix))
+
+      # do the load params and load the data
+      load_params = get_load_params(source, 'spec/Bike.csv', true)
+      dss.save_full(load_params)
+      table_name = "#{prefix}_#{source}_meta_loads"
+
+      # check that it's there
+      Sequel.connect ENV["jdbc_url"], :username => ENV["gdc_username"], :password => ENV["gdc_password"] do |conn|
+        f = conn.fetch "SELECT * FROM #{table_name}"
+        row = f.first
+
+        # metadata should be there
+        row[:something_load_meta].should eql("load meta value")
+        # load id as well
+        row[:_load_id].should_not be_nil
+      end
+
+    end
+
   end
 end

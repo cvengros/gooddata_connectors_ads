@@ -7,12 +7,13 @@ module GoodData
           @name_prefix = params['table_name_prefix']
         end
 
-        def create_loads(columns)
-
+        def create_loads(columns, source_prefix=nil)
+          @source = source_prefix
           return create(
             LOAD_INFO_NAME,
             columns.map {|k, v| {'name' => k}},
-            :meta => true
+            :meta => true,
+            :prefix => source_prefix
           )
         end
 
@@ -32,7 +33,7 @@ module GoodData
         end
 
         def load_info_table_name
-          sql_table_name(LOAD_INFO_NAME, :meta => true)
+          sql_table_name(LOAD_INFO_NAME, :meta => true, :prefix => @source)
         end
 
         LOAD_INFO_NAME = 'meta_loads'
