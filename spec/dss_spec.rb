@@ -1,8 +1,11 @@
 require 'spec_helper'
 require 'sequel'
+require 'erb'
 
 FILE1_PATH = File.expand_path('spec/Bike.csv')
 FILE2_PATH = File.expand_path('spec/Bike2.csv')
+OUT_DIRNAME = 'tmp_test'
+SQL_FILE = "spec/bike.sql"
 
 describe GoodData::Connectors::Storage::Dss do
   def get_params(prefix, historization=false)
@@ -59,11 +62,53 @@ describe GoodData::Connectors::Storage::Dss do
 
     if meta
       pars['local_files'][source]['meta'] = {
-        "something_load_meta" => "load meta value"
+        "market" => "US"
       }
     end
     return pars
   end
+
+  def get_extract_params(source, custom_sql=false)
+    pars = {
+      "dataset_mapping" =>  {
+        source => {
+          "bike" => nil
+        }
+      },
+      'output_dirname' => OUT_DIRNAME
+    }
+
+    pars["dataset_mapping"][source]["bike"] = custom_sql ? {
+      "extract_sql" => SQL_FILE
+    } : {
+      "source_object" => "Bike",
+      "columns" => {
+        "id" => {
+          "source_column" => "Id"
+        },
+        "wheel_size" => {
+          "source_column" => "WheelSize"
+        },
+        "manufacturer" => {
+          "source_column" => "Manufacturer"
+        },
+        "manufacturer_wheelsize" => {
+          "source_column_concat" => [
+            "Manufacturer",
+            "WheelSize"
+          ]
+        },
+        "distributor" => {
+          "source_column_concat" => [
+            ":market",
+            "Manufacturer"
+          ]
+        }
+      }
+    }
+    return pars
+  end
+
   describe "save_full" do
     it "saves all the stuff to dss with no history" do
       # create a dss instance
@@ -92,7 +137,6 @@ describe GoodData::Connectors::Storage::Dss do
         f = conn.fetch "SELECT COUNT(*) FROM #{table_name}"
         f.first[:count].should be(4)
       end
-
     end
     it "saves all the stuff to dss with history" do
       # create a dss instance
@@ -149,10 +193,79 @@ describe GoodData::Connectors::Storage::Dss do
         row = f.first
 
         # metadata should be there
-        row[:something_load_meta].should eql("load meta value")
+        row[:market].should eql("US")
         # load id as well
         row[:_load_id].should_not be_nil
       end
+    end
+  end
+
+  describe "extract" do
+    it "extracts using generated sqls" do
+      # load something there
+
+      prefix = "testing#{rand(999)}"
+      source = "test_source"
+      dss = GoodData::Connectors::Storage::Dss.new(nil, get_params(prefix))
+
+      # do the load params and load the data, with meta
+      load_params = get_load_params(source, FILE1_PATH, true)
+      dss.save_full(load_params)
+
+      # unload it
+      extract_params = get_extract_params(source)
+      ext_out = dss.extract(extract_params)
+
+      # see what's there
+      arr_data = CSV.read(ext_out['test_source']['bike']['csv_filename'])
+
+      # 5 cols
+      arr_data[0].length.should eql(5)
+
+      # choose a record
+      r1 = arr_data.select{|a| a[0] == "1"}[0]
+
+      # the number
+      r1[1].to_f.should eql(29.0)
+
+      # the strings and the concats
+      r1[2].should eql('Specialized')
+      r1[3].should eql('Specialized29')
+      r1[4].should eql('USSpecialized')
+    end
+
+
+    SQL = "SELECT COUNT(*), Manufacturer FROM <%= table_name %> GROUP BY Manufacturer"
+
+    it "extracts something using custom sql" do
+      prefix = "testing#{rand(999)}"
+      source = "test_source"
+      dss = GoodData::Connectors::Storage::Dss.new(nil, get_params(prefix))
+
+      # do the load params and load the data, with meta
+      load_params = get_load_params(source, FILE1_PATH, true)
+      dss.save_full(load_params)
+
+      # process the sql file
+      table_name = "#{prefix}_#{source}_Bike_in"
+      renderer = ERB.new(SQL)
+      File.open(SQL_FILE, 'w') {|f| f.write(renderer.result(binding))}
+
+      # unload it
+      extract_params = get_extract_params(source, true)
+      ext_out = dss.extract(extract_params)
+
+      # see what's there
+      arr_data = CSV.read(ext_out['test_source']['bike']['csv_filename'])
+      arr_data[0].length.should eql(2)
+
+      # scott should have 2 lines
+      scott = arr_data.select{|a| a[1] == "Scott"}[0]
+      scott[0].should eql("2")
+
+      # GT 1 line
+      gt = arr_data.select{|a| a[1] == "GT"}[0]
+      gt[0].should eql("1")
 
     end
 

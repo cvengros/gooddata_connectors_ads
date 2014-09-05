@@ -41,7 +41,77 @@ module GoodData
           end
         end
 
+        # extracts data to be filled in to datasets,
+        # writes them to a csv file
+        def extract(params)
+
+          datasources = params['dataset_mapping']
+
+          # create the directory if it doesn't exist
+          dirname = output_dirname(params)
+          FileUtils.mkdir_p(dirname)
+
+          # extract load info and put it my own params
+          @params['load_info'] = get_load_info
+
+          datasources.each do |datasource, datasets|
+          # extract each dataset from vertica
+            datasets.each do |dataset, ds_structure|
+
+              # if custom sql given
+              if ds_structure["extract_sql"]
+                # get the sql from the file
+                sql = File.open(ds_structure["extract_sql"], 'rb') { |f| f.read }
+                columns_gd = nil
+              else
+                # get the columns and generate the sql
+                columns = get_columns(ds_structure)
+                columns_gd = columns[:gd]
+                sql = @generator.extract(
+                  ds_structure["source_object"],
+                  columns[:sql],
+                  datasource
+                )
+              end
+
+              name = "#{dirname}/#{dataset}-#{DateTime.now.to_i.to_s}.csv"
+
+              # columns of the sql query result
+              sql_columns = nil
+
+              # open a file to write select results to it
+              CSV.open(name, 'w', :force_quotes => true) do |csv|
+
+                fetch_handler = lambda do |f|
+                  sql_columns = f.columns
+                  # write the columns to the csv file as a header
+                  csv << sql_columns
+                end
+
+                # execute the select and write row by row
+                execute_select(sql, fetch_handler) do |row|
+                  row_array = sql_columns.map {|col| row[col]}
+                  csv << row_array
+                end
+
+                if columns_gd && (sql_columns != columns_gd.map {|c| c.to_sym})
+                  raise "something is weird, the columns of the sql '#{sql_columns}' aren't the same as the given cols '#{columns_gd}' "
+                end
+              end
+
+              absolute_path = File.absolute_path(name)
+              ds_structure["csv_filename"] = absolute_path
+              @logger.info("Written results to file #{absolute_path}") if @logger
+            end
+          end
+          return datasources
+        end
+
         private
+
+        def output_dirname(params)
+          params['output_dirname'] || DEFAULT_DIRNAME
+        end
 
         def create_tables(source, info, historized_objects)
           # create the load table if it doesn't exist yet
@@ -182,69 +252,7 @@ module GoodData
           return load_id
         end
 
-        DIRNAME = "tmp"
-
-        # extracts data to be filled in to datasets,
-        # writes them to a csv file
-        def extract_data(datasources)
-          # create the directory if it doesn't exist
-          Dir.mkdir(DIRNAME) if ! File.directory?(DIRNAME)
-
-          # extract load info and put it my own params
-          @params['load_info'] = get_load_info
-
-          datasources.each do |datasource, datasets|
-          # extract each dataset from vertica
-            datasets.each do |dataset, ds_structure|
-
-              # if custom sql given
-              if ds_structure["extract_sql"]
-                # get the sql from the file
-                sql = File.open(ds_structure["extract_sql"], 'rb') { |f| f.read }
-                columns_gd = nil
-              else
-                # get the columns and generate the sql
-                columns = get_columns(ds_structure)
-                columns_gd = columns[:gd]
-                sql = @generator.extract(
-                  ds_structure["source_object"],
-                  columns[:sql],
-                  datasource
-                )
-              end
-
-              name = "tmp/#{dataset}-#{DateTime.now.to_i.to_s}.csv"
-
-              # columns of the sql query result
-              sql_columns = nil
-
-              # open a file to write select results to it
-              CSV.open(name, 'w', :force_quotes => true) do |csv|
-
-                fetch_handler = lambda do |f|
-                  sql_columns = f.columns
-                  # write the columns to the csv file as a header
-                  csv << sql_columns
-                end
-
-                # execute the select and write row by row
-                execute_select(sql, fetch_handler) do |row|
-                  row_array = sql_columns.map {|col| row[col]}
-                  csv << row_array
-                end
-
-                if columns_gd && (sql_columns != columns_gd.map {|c| c.to_sym})
-                  raise "something is weird, the columns of the sql '#{sql_columns}' aren't the same as the given cols '#{columns_gd}' "
-                end
-              end
-
-              absolute_path = File.absolute_path(name)
-              ds_structure["csv_filename"] = absolute_path
-              @logger.info("Written results to file #{absolute_path}") if @logger
-            end
-          end
-          return datasources
-        end
+        DEFAULT_DIRNAME = "tmp_out"
 
         def object_has_field(object, field)
           sql = @generator.column_count(object, field)
