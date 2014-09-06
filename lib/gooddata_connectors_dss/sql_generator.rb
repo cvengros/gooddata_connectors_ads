@@ -28,7 +28,8 @@ module GoodData
           return "INSERT INTO #{load_info_table_name} (#{columns.join(',')}) VALUES (#{values_string})"
         end
 
-        def extract_load_info
+        def extract_load_info(source)
+          @source = source
           table_name = load_info_table_name
           return "SELECT * FROM #{table_name} #{last_load_condition}"
         end

@@ -7,6 +7,13 @@ FILE2_PATH = File.expand_path('spec/Bike2.csv')
 OUT_DIRNAME = 'tmp_test'
 SQL_FILE = "spec/bike.sql"
 
+class Hash
+  def deep_merge(second)
+    merger = proc { |key, v1, v2| v1.is_a?(Hash) && v2.is_a?(Hash) ? v1.merge(v2, &merger) : v2 }
+    merge(second, &merger)
+  end
+end
+
 describe GoodData::Connectors::Storage::Dss do
   def get_params(prefix, historization=false)
     pars = {
@@ -70,15 +77,21 @@ describe GoodData::Connectors::Storage::Dss do
 
   def get_extract_params(source, custom_sql=false)
     pars = {
-      "dataset_mapping" =>  {
-        source => {
-          "bike" => nil
+      "config" => {
+        "storage" => {
+          "dss" => {
+            "dataset_mapping" =>  {
+              source => {
+                "bike" => nil
+              }
+            },
+            'output_dirname' => OUT_DIRNAME
+          }
         }
-      },
-      'output_dirname' => OUT_DIRNAME
+      }
     }
 
-    pars["dataset_mapping"][source]["bike"] = custom_sql ? {
+    pars['config']['storage']['dss']["dataset_mapping"][source]["bike"] = custom_sql ? {
       "extract_sql" => SQL_FILE
     } : {
       "source_object" => "Bike",
@@ -213,8 +226,9 @@ describe GoodData::Connectors::Storage::Dss do
       dss.save_full(load_params)
 
       # unload it
-      extract_params = get_extract_params(source)
-      ext_out = dss.extract(extract_params)
+      extract_params = get_extract_params(source).deep_merge(get_params(prefix))
+      dss2 = GoodData::Connectors::Storage::Dss.new(nil, extract_params)
+      ext_out = dss2.extract
 
       # see what's there
       arr_data = CSV.read(ext_out['test_source']['bike']['csv_filename'])
@@ -251,9 +265,11 @@ describe GoodData::Connectors::Storage::Dss do
       renderer = ERB.new(SQL)
       File.open(SQL_FILE, 'w') {|f| f.write(renderer.result(binding))}
 
+      extract_params = get_extract_params(source, true).deep_merge(get_params(prefix))
+      dss2 = GoodData::Connectors::Storage::Dss.new(nil, extract_params)
+
       # unload it
-      extract_params = get_extract_params(source, true)
-      ext_out = dss.extract(extract_params)
+      ext_out = dss2.extract
 
       # see what's there
       arr_data = CSV.read(ext_out['test_source']['bike']['csv_filename'])

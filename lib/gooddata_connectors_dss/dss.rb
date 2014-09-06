@@ -43,19 +43,18 @@ module GoodData
 
         # extracts data to be filled in to datasets,
         # writes them to a csv file
-        def extract(params)
-
-          datasources = params['dataset_mapping']
+        def extract
+          datasources = @params['dataset_mapping']
 
           # create the directory if it doesn't exist
-          dirname = output_dirname(params)
+          dirname = output_dirname(@params)
           FileUtils.mkdir_p(dirname)
 
-          # extract load info and put it my own params
-          @params['load_info'] = get_load_info
-
           datasources.each do |datasource, datasets|
-          # extract each dataset from vertica
+
+            # extract load info and put it my own params
+            @params['load_info'] = get_load_info(datasource)
+            # extract each dataset from vertica
             datasets.each do |dataset, ds_structure|
 
               # if custom sql given
@@ -336,10 +335,10 @@ module GoodData
           }
         end
 
-        def get_load_info
+        def get_load_info(source)
           # get information from the meta table latest row
           # return it in form source_column name -> value
-          select_sql = @generator.extract_load_info
+          select_sql = @generator.extract_load_info(source)
           info = {}
           execute_select(select_sql) do |row|
             info.merge!(row)
