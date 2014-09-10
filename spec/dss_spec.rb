@@ -231,7 +231,7 @@ describe GoodData::Connectors::Storage::Dss do
       ext_out = dss2.extract
 
       # see what's there
-      arr_data = CSV.read(ext_out['test_source']['bike']['csv_filename'])
+      arr_data = CSV.read(ext_out['dataset_mapping']['bike']['csv_filename'])
 
       # 5 cols
       arr_data[0].length.should eql(5)
@@ -272,7 +272,7 @@ describe GoodData::Connectors::Storage::Dss do
       ext_out = dss2.extract
 
       # see what's there
-      arr_data = CSV.read(ext_out['test_source']['bike']['csv_filename'])
+      arr_data = CSV.read(ext_out['dataset_mapping']['bike']['csv_filename'])
       arr_data[0].length.should eql(2)
 
       # scott should have 2 lines

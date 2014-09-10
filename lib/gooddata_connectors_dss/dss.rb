@@ -45,6 +45,7 @@ module GoodData
         # writes them to a csv file
         def extract
           datasources = @params['dataset_mapping']
+          ret = {}
 
           # create the directory if it doesn't exist
           dirname = output_dirname(@params)
@@ -99,11 +100,11 @@ module GoodData
               end
 
               absolute_path = File.absolute_path(name)
-              ds_structure["csv_filename"] = absolute_path
+              ret[dataset] = {"csv_filename" => absolute_path}
               @logger.info("Written results to file #{absolute_path}") if @logger
             end
           end
-          return datasources
+          return {'dataset_mapping' => ret}
         end
 
         private
