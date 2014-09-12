@@ -1,0 +1,8 @@
+INSERT INTO <%= input["schema"] %>.<%= input["stage_table_name"] %> (<%= input["fields"].join(',')%>,_valid_from,_load_id,_load_at)
+SELECT <%= input["fields"].join(',')%>,_valid_from,_load_id,_load_at
+FROM <%= input["schema"] %>.<%= input["table_name"] %> o1
+WHERE NOT EXISTS
+ (
+        SELECT o2.Id FROM <%= input["schema"] %>.<%= input["table_name"] %> o2 WHERE o1.id = o2.id AND o2._valid_from > o1._valid_from
+
+ );

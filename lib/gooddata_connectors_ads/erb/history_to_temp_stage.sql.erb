@@ -1,0 +1,24 @@
+INSERT INTO <%= input["schema"] %>.<%= input["stage_table_name"] %> (<%= input["id"]%>,<%= input["fields"].map{|v| v["name"] }.join(',')%>,_valid_from,_load_id,_load_at)
+SELECT
+    <%= input["id"]%>,
+    <% input["fields"].each_with_index do |field,index| %>
+        <%= "CAST(#{field["name"]} as #{field["type"]})" %>,
+    <%end%>
+    <%= input["history_timestamp"]%> as _valid_from,
+    <%= input["load_id"]%>,
+    '<%= input["load_at"]%>'
+FROM
+(
+<% input["fields"].each_with_index do |field,index| %>
+    SELECT
+        <%= input["history_id"]%> as <%= input["id"]%>,
+        <% input["fields"].each do |inner_field| %>
+            <%= inner_field["name"] == field["name"] ? "value as #{inner_field["name"]}" : "NULL as #{inner_field["name"]}" %>,
+        <%end%>
+        <%= input["history_timestamp"]%>
+    FROM <%= input["schema"] %>.<%= input["table_name"] %>
+    WHERE key = '<%= field["name"] %>'
+
+    <% if (index != input["fields"].count - 1) %>UNION ALL<%end%>
+<%end%>
+) inner_union;

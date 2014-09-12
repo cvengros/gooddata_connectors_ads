@@ -5,7 +5,7 @@ require 'gooddata_connectors_ads/version'
 
 Gem::Specification.new do |spec|
   spec.name          = "gooddata_connectors_ads"
-  spec.version       = GoodDataConnectorsAds::VERSION
+  spec.version       = GoodData::Connectors::Ads::VERSION
   spec.authors       = ["Adrian Toman"]
   spec.email         = ["adrian.toman@gooddata.com"]
   spec.summary       = %q{Gem for integration with Gooddata ADS, written for connectors framework}

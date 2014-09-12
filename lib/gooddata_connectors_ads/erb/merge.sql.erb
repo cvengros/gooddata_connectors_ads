@@ -1,0 +1,14 @@
+MERGE INTO <%= input["schema"] %>.<%= input["table_name"] %> o
+USING <%= input["schema"] %>.<%= input["temp_table_name"] %> temp
+ON (
+    o.<%= input["id"] %> = temp.<%= input["id"] %>
+        <% input["fields"].each do |field| %>
+        AND
+            (o.<%= field %> = temp.<%= field %> or (o.<%= field %> IS NULL and temp.<%= field %> IS NULL))
+        <%end%>
+        AND
+            o._valid_from = temp._valid_from
+)
+WHEN MATCHED THEN UPDATE SET _valid_to = temp._valid_to
+WHEN NOT MATCHED THEN INSERT (<%= input["id"] %>,<%= input["fields"].join(", ") %>,_valid_from,_valid_to,_load_at,_load_id)
+  VALUES (temp.<%= input["id"] %>,<% input["fields"].each do |field| %>temp.<%= field %>,<%end%>temp._valid_from,temp._valid_to,temp._load_at,temp._load_id);

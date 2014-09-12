@@ -1,3 +1,7 @@
-module GoodDataConnectorsAds
-  VERSION = "0.0.1"
+module GoodData
+  module Connectors
+    module Ads
+      VERSION = "0.0.1"
+    end
+  end
 end
