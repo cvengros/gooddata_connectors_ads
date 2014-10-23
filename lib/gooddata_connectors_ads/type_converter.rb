@@ -24,6 +24,8 @@ module GoodData
                   output = "INTEGER"
               when Metadata::StringType
                   output = "VARCHAR(#{type.size})"
+              when Metadata::BigIntegerType
+                output = "BIGINTEGER"
             end
             output
           end

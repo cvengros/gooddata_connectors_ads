@@ -1,5 +1,5 @@
-INSERT INTO <%= input["schema"] %>.<%= input["temp_table_name"] %> (<%= input["id"] %>,<%= input["fields"].join(", ") %>,_load_id,_load_at,_valid_from,_valid_to)
-SELECT <%= input["id"] %>,<%= input["fields"].join(", ") %>,_load_id,_load_at,_valid_from,_valid_to
+INSERT INTO <%= input["schema"] %>.<%= input["temp_table_name"] %> (<%= input["id"] %>,<%= input["fields"].join(", ") %>,_load_id,_load_at,_is_deleted,_valid_from,_valid_to)
+SELECT <%= input["id"] %>,<%= input["fields"].join(", ") %>,_load_id,_load_at,_is_deleted,_valid_from,_valid_to
 FROM
 (
 WITH last_values as (
@@ -10,6 +10,7 @@ SELECT DISTINCT
         <%end%>
         COALESCE(LAST_VALUE(_load_id IGNORE NULLS) OVER (Partition BY <%= input["id"] %> ORDER BY _valid_from),<%= input["default_load_id"] %>) as _load_id,
         COALESCE(LAST_VALUE(_load_at IGNORE NULLS) OVER (Partition BY <%= input["id"] %> ORDER BY _valid_from),'<%= input["default_load_at"] %>') as _load_at,
+        LAST_VALUE(_is_deleted IGNORE NULLS) OVER (Partition BY <%= input["id"] %> ORDER BY _valid_from) as _is_deleted,
         _valid_from,
         NULL as _valid_to
 FROM <%= input["schema"] %>.<%= input["temp_stage_table_name"] %>
@@ -24,6 +25,7 @@ last_values_with_valid_to as
                 <%end%>
                 _load_id,
                 _load_at,
+                _is_deleted,
                 _valid_from,
                 FIRST_VALUE(_valid_from) OVER (Partition BY <%= input["id"] %> ORDER BY _valid_from ROWS BETWEEN 1 FOLLOWING AND UNBOUNDED FOLLOWING) as _valid_to
         FROM last_values

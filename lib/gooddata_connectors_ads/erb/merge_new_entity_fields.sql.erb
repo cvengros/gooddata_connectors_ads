@@ -1,0 +1,26 @@
+START TRANSACTION;
+INSERT INTO <%= input["schema"] %>.<%= input["table_name"] %> (<%= input["fields_from_main"].join(", ") %>,<%= input["fields_from_temp"].join(", ") %>,_load_id,_load_at,_is_deleted,_valid_from,_valid_to)
+SELECT
+	<% input["fields_from_main"].each do |field| %>
+		main.<%= field %>,
+	<% end%>
+	<% input["fields_from_temp"].each do |field| %>
+		temp.<%= field %>,
+	<% end%>  
+	<%= input["load_id"] %>,
+	'<%= input["load_at"] %>',
+	false,
+	main._valid_from,
+	NULL
+FROM <%= input["schema"] %>.<%= input["table_name"] %> main
+INNER JOIN <%= input["schema"] %>.<%= input["temp_table_name"] %> temp
+    ON
+        temp.<%= input["id"]%> = main.<%= input["id"]%>
+            AND
+        main._valid_to IS NULL
+            AND
+        main._is_deleted IS NULL;
+UPDATE <%= input["schema"] %>.<%= input["table_name"] %> o
+    SET _valid_to = o._valid_from
+WHERE _valid_to IS NULL AND _load_id != <%= input["load_id"] %>;
+

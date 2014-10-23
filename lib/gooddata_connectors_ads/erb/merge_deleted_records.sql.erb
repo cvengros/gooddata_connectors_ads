@@ -1,0 +1,8 @@
+UPDATE <%= input["schema"] %>.<%= input["table_name"] %> main
+    SET
+        _is_deleted = true,
+        _load_at = '<%= input["load_at"] %>',
+        _load_id = <%= input["load_id"] %>,
+        <%= input["timestamp"] %> = deleted.<%= input["timestamp"] %>
+FROM <%= input["schema"] %>.<%= input["temp_table_name"] %> deleted
+WHERE deleted.<%= input["id"] %> = main.<%= input["id"] %>

@@ -13,7 +13,11 @@ FROM
     SELECT
         <%= input["history_id"]%> as <%= input["id"]%>,
         <% input["fields"].each do |inner_field| %>
-            <%= inner_field["name"] == field["name"] ? "value as #{inner_field["name"]}" : "NULL as #{inner_field["name"]}" %>,
+            <% if inner_field["type_object"].nullabble? %>
+                <%= inner_field["name"] == field["name"] ? "CASE WHEN value = '' THEN NULL ELSE value END as #{inner_field["name"]}" : "NULL as #{inner_field["name"]}" %>,
+            <% else %>
+                <%= inner_field["name"] == field["name"] ? "value as #{inner_field["name"]}" : "NULL as #{inner_field["name"]}" %>,
+            <%end%>
         <%end%>
         <%= input["history_timestamp"]%>
     FROM <%= input["schema"] %>.<%= input["table_name"] %>

@@ -1,0 +1,5 @@
+SELECT COUNT(<%= input["id"]%>) FROM <%= input["schema"]%>.<%= input["entity_id"]%>
+WHERE _is_deleted = false
+<% if input["history"]  %>
+    AND _valid_to IS NULL
+<% end %>

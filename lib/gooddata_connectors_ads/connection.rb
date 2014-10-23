@@ -40,11 +40,6 @@ module GoodData
             @db.fetch(sql)
           end
 
-
-
-
-
-
         end
 
 

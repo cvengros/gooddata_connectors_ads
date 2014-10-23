@@ -8,7 +8,9 @@ ON (
         <%end%>
         AND
             o._valid_from = temp._valid_from
+         AND
+            o._is_deleted = temp._is_deleted
 )
 WHEN MATCHED THEN UPDATE SET _valid_to = temp._valid_to
-WHEN NOT MATCHED THEN INSERT (<%= input["id"] %>,<%= input["fields"].join(", ") %>,_valid_from,_valid_to,_load_at,_load_id)
-  VALUES (temp.<%= input["id"] %>,<% input["fields"].each do |field| %>temp.<%= field %>,<%end%>temp._valid_from,temp._valid_to,temp._load_at,temp._load_id);
+WHEN NOT MATCHED THEN INSERT (<%= input["id"] %>,<%= input["fields"].join(", ") %>,_valid_from,_valid_to,_load_at,_load_id,_is_deleted)
+  VALUES (temp.<%= input["id"] %>,<% input["fields"].each do |field| %>temp.<%= field %>,<%end%>temp._valid_from,temp._valid_to,temp._load_at,temp._load_id,temp._is_deleted);

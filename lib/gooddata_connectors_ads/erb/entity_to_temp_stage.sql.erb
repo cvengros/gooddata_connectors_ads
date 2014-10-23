@@ -1,4 +1,4 @@
-INSERT INTO <%= input["schema"] %>.<%= input["stage_table_name"] %> (<%= input["id"] %>,<%= input["fields"].join(',')%>,_valid_from,_load_id,_load_at)
+INSERT INTO <%= input["schema"] %>.<%= input["stage_table_name"] %> (<%= input["id"] %>,<%= input["insert_fields"].join(',')%>,_valid_from,_load_id,_load_at)
 SELECT
-    <%= input["id"]%>,<%= input["fields"].join(',')%>,<%= input["timestamp"]%>,<%= input["load_id"]%>,'<%= input["load_at"]%>'
+    <%= input["id"]%>,<%= input["select_fields"].join(',')%>,<%= input["timestamp"]%>,<%= input["load_id"]%>,'<%= input["load_at"]%>'
 FROM <%= input["schema"] %>.<%= input["table_name"] %>;

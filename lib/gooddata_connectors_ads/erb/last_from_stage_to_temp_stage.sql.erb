@@ -1,5 +1,5 @@
-INSERT INTO <%= input["schema"] %>.<%= input["stage_table_name"] %> (<%= input["fields"].join(',')%>,_valid_from,_load_id,_load_at)
-SELECT <%= input["fields"].join(',')%>,_valid_from,_load_id,_load_at
+INSERT INTO <%= input["schema"] %>.<%= input["stage_table_name"] %> (<%= input["fields"].join(',')%>,_valid_from,_load_id,_load_at,_is_deleted)
+SELECT <%= input["fields"].join(',')%>,_valid_from,_load_id,_load_at,_is_deleted
 FROM <%= input["schema"] %>.<%= input["table_name"] %> o1
 WHERE NOT EXISTS
  (
