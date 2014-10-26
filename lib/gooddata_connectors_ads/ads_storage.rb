@@ -10,22 +10,48 @@ module GoodData
 
       class AdsStorage < Base::BaseStorage
 
-        META_COLUMNS ={
-            "_load_id" => "integer NOT NULL",
-            "_load_at" => "timestamp NOT NULL",
-            "_inserted_at" => "timestamp NOT NULL DEFAULT now()",
-            "_is_deleted" => "boolean NOT NULL DEFAULT FALSE",
-            "_valid_from" => "timestamp NOT NULL",
-            "_valid_to" => "timestamp"
-        }
 
+        DEFAULT_META_COMPUTED_FIELDS = [
+            {
+                "name" => "_LOAD_ID",
+                "function" => "load_id",
+                "type" => "integer",
+                "non-history" => true
 
-        META_COLUMNS_WITHOUT_HISTORY ={
-            "_load_id" => "integer NOT NULL",
-            "_load_at" => "timestamp NOT NULL",
-            "_inserted_at" => "timestamp NOT NULL DEFAULT now()",
-            "_is_deleted" => "boolean NOT NULL DEFAULT FALSE"
-        }
+            },
+            {
+                "name" => "_LOAD_AT",
+                "function" => "load_at",
+                "type" => "time-true",
+                "non-history" => true
+
+            },
+            {
+                "name" => "_INSERTED_AT",
+                "function" => "now",
+                "type" => "time-true",
+                "non-history" => true
+            },
+            {
+                "name" => "_IS_DELETED",
+                "function" => "empty",
+                "type" => "boolean",
+                "non-history" => false
+            },
+            {
+                "name" => "_VALID_FROM",
+                "function" => "timestamp",
+                "type" => "time-true",
+                "non-history" => false
+            },
+            {
+                "name" => "_HASH",
+                "function" => "hash",
+                "type" => "integer",
+                "non-history" => true
+            }
+
+        ]
 
         DEFAULT_VALIDATION_DIRECTORY = File.join(File.dirname(__FILE__),"../validations")
 
@@ -37,7 +63,6 @@ module GoodData
           username = @metadata.get_configuration_by_type_and_key(@type,"username")
           password = @metadata.get_configuration_by_type_and_key(@type,"password")
           Connection.set_up(ads_instance_id,username,password)
-
         end
 
 
@@ -135,21 +160,16 @@ module GoodData
             entity.fields.values.find_all{|f| !f.disabled? }.each do |v|
               input["fields"] << {"name" => v.id, "type" => TypeConverter.to_database_type(v.type)}
             end
-            if (history)
-              input["fields"] += META_COLUMNS.map{|k,v| {"name" => k,"type" => v}}
-            else
-              input["fields"] += META_COLUMNS_WITHOUT_HISTORY.map{|k,v| {"name" => k,"type" => v}}
-            end
             if (!entity.custom["computed_id"].nil?)
               input["fields"] << {"name" => "computed_id","type" => "BIGINT"}
             end
-
-            # Lets solve computed fields section in ADS gem configuration
-            # Computed fields are added only when creating the table
-            input["fields"] += computed_fields_structure()
+            input["fields"] += computed_fields_structure(history)
             Connection.db.run(Base::Templates.make("create_table",input))
           else
             # We have found the DB entity
+
+            # TO DO Change structural tables in case of change in computed fields
+
             db_entity = @database_entities[entity.id]
             diff = entity.diff(db_entity)
             if (!diff["fields"]["only_in_source"].empty?)
@@ -193,7 +213,7 @@ module GoodData
           input = {}
           input["schema"] = @metadata.get_configuration_by_type_and_key(@type,"instance_id")
           input["table_name"] = "temp_#{entity.id}_history"
-          input["fields"] = HISTORY_TABLE.map{|k,v| {"name" => k, "type" => v} }
+          input["fields"] = Base::HISTORY_TABLE.map{|k,v| {"name" => k, "type" => v} }
           Connection.db.run(Base::Templates.make("create_table",input))
         end
 
@@ -201,7 +221,7 @@ module GoodData
           input = {}
           input["schema"] = @metadata.get_configuration_by_type_and_key(@type,"instance_id")
           input["table_name"] = "temp_" + root_entity.id + "_history"
-          input["fields"] = HISTORY_TABLE.keys
+          input["fields"] = Base::HISTORY_TABLE.keys
           input["filename"] = File.expand_path(entity.runtime["parsed_filename"])
           input["exception_filename"] = File.expand_path("output/exception.csv")
           input["rejected_filename"] = File.expand_path("output/rejected.csv")
@@ -321,11 +341,9 @@ module GoodData
           input["table_name"] = entity.id
           # We need to create table with timestamp value, because we don't want to have it in final table
           input["fields"] = []
-          entity.fields.values.find_all{|f| !f.disabled? }.each do |v|
-            if (v.id != entity.custom["timestamp"])
-              input["fields"] << v.id
-            end
-          end
+          input["fields"] << entity.get_enabled_fields.find_all{|v| v != entity.custom["timestamp"]}
+          input["metadata_fields"] = computed_fields_structure(true).map{|v| v["name"]}
+          input["metadata_timestamp"] = DEFAULT_META_COMPUTED_FIELDS.find{|v| v["function"] == "timestamp"}["name"]
           puts Base::Templates.make("last_from_stage_to_temp_stage",input)
           Connection.db.run(Base::Templates.make("last_from_stage_to_temp_stage",input))
 
@@ -342,11 +360,16 @@ module GoodData
           input["load_at"] = DateTime.now
           # We need to create table with timestamp value, because we don't want to have it in final table
           input["fields"] = []
-          entity.fields.values.find_all{|f| !f.disabled? }.each do |v|
+          entity.get_enabled_fields_objects.each do |v|
             if (v.id != entity.custom["timestamp"] and v.id != entity.custom["id"])
-              input["fields"] << {"name" => v.id, "type" => TypeConverter.to_database_type(v.type), "type_object" => v.type}
+              input["fields"] << {"name" => v.id, "type" => v.type}
             end
           end
+          input["metadata_fields"] = []
+          input["metadata_fields"] << computed_fields_structure(true).map{|v| v["name"]}
+          input["metadata_timestamp"] = DEFAULT_META_COMPUTED_FIELDS.find{|v| v["function"] == "timestamp"}["name"]
+
+          #TypeConverter.to_database_type(v.type)
           puts Base::Templates.make("history_to_temp_stage",input)
           Connection.db.run(Base::Templates.make("history_to_temp_stage",input))
 
@@ -592,8 +615,9 @@ module GoodData
         end
 
 
-        def computed_fields_structure()
-          computed_fields = @metadata.get_configuration_by_type_and_key(@type,"computed_fields")
+        def computed_fields_structure(history = false)
+          computed_fields = DEFAULT_META_COMPUTED_FIELDS.find_all{|v| history ? true : v["non-history"] }
+          computed_fields.merge!(@metadata.get_configuration_by_type_and_key(@type,"computed_fields") || {})
           if (!computed_fields.nil?)
              output = []
              computed_fields.each do |field|

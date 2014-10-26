@@ -1,10 +1,13 @@
-INSERT INTO <%= input["schema"] %>.<%= input["stage_table_name"] %> (<%= input["id"]%>,<%= input["fields"].map{|v| v["name"] }.join(',')%>,_valid_from,_load_id,_load_at)
+INSERT INTO <%= input["schema"] %>.<%= input["stage_table_name"] %> (<%= input["id"]%>,<%= input["fields"].map{|v| v["name"] }.join(',')%>,<%= input["metadata_fields"].join(',')%>)
 SELECT
     <%= input["id"]%>,
     <% input["fields"].each_with_index do |field,index| %>
-        <%= "CAST(#{field["name"]} as #{field["type"]})" %>,
+        <%= "CAST(#{field["name"]} as #{TypeConverter.to_database_type(field["type"])}" %>,
     <%end%>
-    <%= input["history_timestamp"]%> as _valid_from,
+
+
+
+    <%= input["history_timestamp"]%> as <%= input["metadata_timestamp"]%>,
     <%= input["load_id"]%>,
     '<%= input["load_at"]%>'
 FROM

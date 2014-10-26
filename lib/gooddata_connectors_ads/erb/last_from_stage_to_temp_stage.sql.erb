@@ -1,8 +1,8 @@
-INSERT INTO <%= input["schema"] %>.<%= input["stage_table_name"] %> (<%= input["fields"].join(',')%>,_valid_from,_load_id,_load_at,_is_deleted)
-SELECT <%= input["fields"].join(',')%>,_valid_from,_load_id,_load_at,_is_deleted
+INSERT INTO <%= input["schema"] %>.<%= input["stage_table_name"] %> (<%= input["fields"].join(',')%>,<%= input["metadata_fields"].join(',')%>)
+SELECT <%= input["fields"].join(',')%>,<%= input["metadata_fields"].join(',')%>
 FROM <%= input["schema"] %>.<%= input["table_name"] %> o1
 WHERE NOT EXISTS
  (
-        SELECT o2.Id FROM <%= input["schema"] %>.<%= input["table_name"] %> o2 WHERE o1.id = o2.id AND o2._valid_from > o1._valid_from
+        SELECT o2.Id FROM <%= input["schema"] %>.<%= input["table_name"] %> o2 WHERE o1.id = o2.id AND o2.<%= input["metadata_timestamp"]%> > o1.<%= input["metadata_timestamp"]%>
 
  );
