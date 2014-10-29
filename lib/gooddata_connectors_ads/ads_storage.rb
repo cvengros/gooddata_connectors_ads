@@ -36,7 +36,8 @@ module GoodData
           ads_instance_id = @metadata.get_configuration_by_type_and_key(@type,"instance_id")
           username = @metadata.get_configuration_by_type_and_key(@type,"username")
           password = @metadata.get_configuration_by_type_and_key(@type,"password")
-          Connection.set_up(ads_instance_id,username,password)
+          server = @metadata.get_configuration_by_type_and_key(@type,"server") || "secure.gooddata.com"
+          Connection.set_up(ads_instance_id,username,password,server)
 
         end
 
@@ -114,6 +115,7 @@ module GoodData
             import_deleted_data(entity)
             integrate_entity(entity)
           end
+          Connection.disconnect
           # perform_validations(entity)
         end
 

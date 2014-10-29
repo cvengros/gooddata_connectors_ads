@@ -1,5 +1,5 @@
 COPY <%= input["schema"] %>.<%= input["table_name"] %>(<%= input["fields"].join(',') %>
      <%= input["computed_id"].nil? ? "" : ",computed_id as #{input["computed_id"]}" %>
      <%= input["computed_fields"].nil? or input["computed_fields"].empty? ? "" : ",#{input["computed_fields"].join(',')}" %>)
-  FROM LOCAL '<%= input["filename"] %>' <%= input.include?("file_format") ? " #{input["file_format"]} " : "" %> WITH PARSER GdcCsvParser()
-  DELIMITER '<%= input.include?("column_separator") ? input["column_separator"] : "," %>' ESCAPE AS '"' SKIP <%= input.include?("skiped_rows") ? input["skiped_rows"] : 1 %> EXCEPTIONS '<%= input["exception_filename"] %>' REJECTED DATA '<%= input["rejected_filename"] %>';
+  FROM LOCAL '<%= input["filename"] %>' <%= input.include?("file_format") ? " #{input["file_format"]} " : "" %>
+  DELIMITER '<%= input.include?("column_separator") ? input["column_separator"] : "," %>' SKIP <%= input.include?("skiped_rows") ? input["skiped_rows"] : 1 %> EXCEPTIONS '<%= input["exception_filename"] %>' REJECTED DATA '<%= input["rejected_filename"] %>';
