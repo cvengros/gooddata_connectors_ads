@@ -1,16 +1,31 @@
 MERGE INTO <%= input["schema"] %>.<%= input["table_name"] %> o
 USING <%= input["schema"] %>.<%= input["temp_table_name"] %> temp
 ON (
-    o.<%= input["id"] %> = temp.<%= input["id"] %>
-        <% input["fields"].each do |field| %>
-        AND
-            (o.<%= field %> = temp.<%= field %> or (o.<%= field %> IS NULL and temp.<%= field %> IS NULL))
-        <%end%>
-        AND
-            o._valid_from = temp._valid_from
-         AND
-            o._is_deleted = temp._is_deleted
+    o.<%= input["metadata_hash"] %> = temp.<%= input["metadata_hash"] %>
 )
-WHEN MATCHED THEN UPDATE SET _valid_to = temp._valid_to
-WHEN NOT MATCHED THEN INSERT (<%= input["id"] %>,<%= input["fields"].join(", ") %>,_valid_from,_valid_to,_load_at,_load_id,_is_deleted)
-  VALUES (temp.<%= input["id"] %>,<% input["fields"].each do |field| %>temp.<%= field %>,<%end%>temp._valid_from,temp._valid_to,temp._load_at,temp._load_id,temp._is_deleted);
+WHEN NOT MATCHED THEN INSERT (
+    <%= input["id"] %>
+    <% if (!input["fields"].nil? and !input["fields"].empty?) %>
+       <% input["fields"].each do |field|  %>
+           ,<%= field %>
+       <% end %>
+    <% end %>
+    <% if (!input["metadata_declaration"].nil? and !input["metadata_declaration"].empty?) %>
+       <% input["metadata_declaration"].each do |metadata|  %>
+           ,<%= "#{metadata["name"]}" %>
+       <% end %>
+    <% end %>)
+  VALUES
+    (
+        temp.<%= input["id"] %>
+        <% if (!input["fields"].nil? and !input["fields"].empty?) %>
+           <% input["fields"].each do |field|  %>
+               ,temp.<%= field %>
+           <% end %>
+        <% end %>
+        <% if (!input["metadata_declaration"].nil? and !input["metadata_declaration"].empty?) %>
+           <% input["metadata_declaration"].each do |metadata|  %>
+               ,temp.<%= "#{metadata["name"]}" %>
+           <% end %>
+        <% end %>
+    );

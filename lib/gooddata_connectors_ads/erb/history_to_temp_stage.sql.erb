@@ -1,22 +1,25 @@
 INSERT INTO <%= input["schema"] %>.<%= input["stage_table_name"] %> (<%= input["id"]%>,<%= input["fields"].map{|v| v["name"] }.join(',')%>,<%= input["metadata_fields"].join(',')%>)
 SELECT
     <%= input["id"]%>,
-    <% input["fields"].each_with_index do |field,index| %>
-        <%= "CAST(#{field["name"]} as #{TypeConverter.to_database_type(field["type"])}" %>,
+    <% input["fields"].each do |field| %>
+        <%= "#{field["name"]}::#{GoodData::Connectors::Ads::TypeConverter.to_database_type(field["type"])}" %>,
     <%end%>
-
-
-
-    <%= input["history_timestamp"]%> as <%= input["metadata_timestamp"]%>,
-    <%= input["load_id"]%>,
-    '<%= input["load_at"]%>'
+    <% input["metadata_declaration"].each_with_index do |metadata,index| %>
+     <%if metadata["value"] =~ /%TIMESTAMP%/ %>
+        <%= input["history_timestamp"] %>
+     <% elsif metadata["value"] =~ /%IS_DELETED%/ %>
+        <%= false %>
+     <% else%>
+           <%= metadata["value"] %>
+     <%end%><% if (index != input["metadata_declaration"].count - 1) %>,<%end%>
+    <%end%>
 FROM
 (
 <% input["fields"].each_with_index do |field,index| %>
     SELECT
         <%= input["history_id"]%> as <%= input["id"]%>,
         <% input["fields"].each do |inner_field| %>
-            <% if inner_field["type_object"].nullabble? %>
+            <% if inner_field["type"].nullabble? %>
                 <%= inner_field["name"] == field["name"] ? "CASE WHEN value = '' THEN NULL ELSE value END as #{inner_field["name"]}" : "NULL as #{inner_field["name"]}" %>,
             <% else %>
                 <%= inner_field["name"] == field["name"] ? "value as #{inner_field["name"]}" : "NULL as #{inner_field["name"]}" %>,

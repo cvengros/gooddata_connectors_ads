@@ -1,43 +1,28 @@
-MERGE INTO <%= input["schema"] %>.<%= input["table_name"] %> o
+MERGE /* + direct */ INTO <%= input["schema"] %>.<%= input["table_name"] %> o
 USING <%= input["schema"] %>.<%= input["temp_table_name"] %> temp
 ON (
     o.<%= input["id"] %> = temp.<%= input["id"] %>
 )
 WHEN MATCHED THEN
     UPDATE SET
+        <%= input["id"] %> = temp.<%= input["id"] %>
         <% input["fields"].each do |field| %>
-            <%= field %> = temp.<%= field %>,
+            ,<%= field %> = temp.<%= field %>
         <%end%>
-        _load_at = '<%= input["load_at"]%>',
-        _load_id = <%= input["load_id"]%>,
-        <% if (input.include?("timestamp")) %>
-            <%= input["timestamp"]%> = temp.<%= input["timestamp"]%>,
-        <% end %>
-        <% if (input.include?("computed_fields") and !input["computed_fields"].empty?) %>
-            <% input["computed_fields"].each do |value| %>
-                <%= value["target"] %> = temp.<%= value["source"] %>,
-            <%end%>
-        <% end %>
-        _is_deleted = false
+        <% input["metadata_declaration"].each do |metadata| %>
+            ,<%= metadata["name"] %> = temp.<%= metadata["name"] %>
+        <%end%>
 WHEN NOT MATCHED THEN INSERT
     (
-        <%= input["id"] %>,<%= input["fields"].join(", ") %>,
-        <%= input.include?("timestamp") ? "#{input["timestamp"]}," : "" %>
-        <% if (input.include?("computed_fields") and !input["computed_fields"].empty?) %>
-            <% input["computed_fields"].each do |value| %>
-                <%= value["target"] %>,
-            <%end%>
-        <% end %>
-        _load_at,_load_id,_is_deleted
+        <%= input["id"] %>,<%= input["fields"].join(", ") %>
+        <% input["metadata_declaration"].each do |metadata| %>
+            ,<%= metadata["name"] %>
+        <%end%>
         )
 VALUES (
-        temp.<%= input["id"] %>,
-        <% input["fields"].each do |field| %>temp.<%= field %>,<%end%>
-        <%= input.include?("timestamp") ? "temp.#{input["timestamp"]}," : "" %>
-        <% if (input.include?("computed_fields") and !input["computed_fields"].empty?) %>
-            <% input["computed_fields"].each do |value| %>
-                temp.<%= value["source"] %>,
-            <%end%>
-        <% end %>
-        '<%= input["load_at"]%>',<%= input["load_id"]%>,false
-        );
+        temp.<%= input["id"] %>
+        <% input["fields"].each do |field| %>,temp.<%= field %><%end%>
+        <% input["metadata_declaration"].each do |metadata| %>
+            ,temp.<%= metadata["name"] %>
+        <%end%>
+   );

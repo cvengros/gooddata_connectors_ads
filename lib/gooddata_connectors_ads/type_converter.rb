@@ -14,7 +14,7 @@ module GoodData
                   output = "BOOLEAN"
               when Metadata::DateType
                 if (type.with_time?)
-                  output = "DATETIME"
+                  output = "TIMESTAMPTZ"
                 else
                   output = "DATE"
                 end
@@ -24,8 +24,6 @@ module GoodData
                   output = "INTEGER"
               when Metadata::StringType
                   output = "VARCHAR(#{type.size})"
-              when Metadata::BigIntegerType
-                output = "BIGINTEGER"
             end
             output
           end
@@ -45,7 +43,7 @@ module GoodData
               when 10
                 type = "date-false"
               #Timestamp
-              when 12
+              when 12,13
                 type = "date-true"
               #Numeric - Decimal
               when 16

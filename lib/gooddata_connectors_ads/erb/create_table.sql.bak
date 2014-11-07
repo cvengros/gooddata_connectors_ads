@@ -1,0 +1,5 @@
+CREATE <%= (input["temporary"] || false) ? "TEMPORARY" : ""  %> TABLE <%= input["schema"] %>.<%= input["table_name"] %>(
+    <% input["fields"].each_with_index do |field,index| %>
+       "<%= field["name"] -%>"         <%= field["type"] -%><% if (index != input["fields"].count - 1) %>,<%end%>
+    <%end%>
+)<%= (input["preserve_rows"] || false) ? "ON COMMIT PRESERVE ROWS" : ""  %>;

@@ -1,4 +1,26 @@
-INSERT INTO <%= input["schema"] %>.<%= input["stage_table_name"] %> (<%= input["id"] %>,<%= input["insert_fields"].join(',')%>,_valid_from,_load_id,_load_at)
+INSERT INTO <%= input["schema"] %>.<%= input["stage_table_name"] %> (
+    <%= input["id"] %>
+    <% if (!input["fields"].nil? and !input["fields"].empty?) %>
+        <% input["fields"].each do |field|  %>
+            ,<%= field %>
+        <% end %>
+    <% end %>
+    <% if (!input["metadata_declaration"].nil? and !input["metadata_declaration"].empty?) %>
+        <% input["metadata_declaration"].each do |metadata|  %>
+            ,<%= "#{metadata["name"]}" %>
+        <% end %>
+    <% end %>
+)
 SELECT
-    <%= input["id"]%>,<%= input["select_fields"].join(',')%>,<%= input["timestamp"]%>,<%= input["load_id"]%>,'<%= input["load_at"]%>'
+    <%= input["id"]%>
+    <% if (!input["fields"].nil? and !input["fields"].empty?) %>
+        <% input["fields"].each do |field|  %>
+            ,<%= field %>
+        <% end %>
+    <% end %>
+    <% if (!input["metadata_declaration"].nil? and !input["metadata_declaration"].empty?) %>
+        <% input["metadata_declaration"].each do |metadata|  %>
+            ,<%= "#{metadata["name"]}" %>
+        <% end %>
+     <% end %>
 FROM <%= input["schema"] %>.<%= input["table_name"] %>;

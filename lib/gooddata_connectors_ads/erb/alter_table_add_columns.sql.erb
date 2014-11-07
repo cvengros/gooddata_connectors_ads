@@ -1,2 +1,2 @@
-ALTER TABLE <%= input["schema"] %>.<%= input["table_name"] %> ADD COLUMN <%= input["name"] -%> <%= input["type"] -%>;
+ALTER TABLE <%= input["schema"] %>.<%= input["table_name"] %> ADD COLUMN <%= input["name"] -%> <%= GoodData::Connectors::Ads::TypeConverter.to_database_type(input["type"]) -%>;
 
