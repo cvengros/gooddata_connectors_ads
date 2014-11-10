@@ -29,8 +29,8 @@ module GoodData
           input["column_separator"] = @entity.custom["column_separator"] if @entity.custom.include?("column_separator")
           input["db_parser"] = @entity.custom["db_parser"] if @entity.custom.include?("db_parser")
           input["file_format"] = @entity.custom["file_format"] if @entity.custom.include?("file_format")
-          input["exception_filename"] = File.expand_path("output/#{@entity.id}_#{@index}_exception.csv")
-          input["rejected_filename"] = File.expand_path("output/#{@entity.id}_#{@index}_rejected.csv")
+          input["exception_filename"] = File.expand_path("output/#{@entity.id}_#{@index}_#{DateTime.now.strftime("%Y%m%dT%H%M")}_exception.csv")
+          input["rejected_filename"] = File.expand_path("output/#{@entity.id}_#{@index}_#{DateTime.now.strftime("%Y%m%dT%H%M")}_rejected.csv")
           @sql = Base::Templates.make("copy_from_local",input)
         end
       end

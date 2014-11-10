@@ -3,5 +3,5 @@ CREATE <%= (input["temporary"] || false) ? "TEMPORARY" : ""  %> TABLE <%= input[
        "<%= field["name"] -%>"         <%= GoodData::Connectors::Ads::TypeConverter.to_database_type(field["type"]) -%><% if (index != input["fields"].count - 1) %>,<%end%>
     <%end%>
 ) <%= (input["preserve_rows"] || false) ? "ON COMMIT PRESERVE ROWS" : ""  %>
-ORDER BY _HASH
-SEGMENTED BY hash(_HASH) all nodes;
+ORDER BY _HASH_GRAIN
+SEGMENTED BY hash(_HASH_GRAIN) all nodes;

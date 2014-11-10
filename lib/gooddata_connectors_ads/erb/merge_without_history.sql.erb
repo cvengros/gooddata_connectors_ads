@@ -1,7 +1,7 @@
 MERGE /* + direct */ INTO <%= input["schema"] %>.<%= input["table_name"] %> o
 USING <%= input["schema"] %>.<%= input["temp_table_name"] %> temp
 ON (
-    o.<%= input["id"] %> = temp.<%= input["id"] %>
+    o._HASH_GRAIN = temp._HASH_GRAIN
 )
 WHEN MATCHED THEN
     UPDATE SET

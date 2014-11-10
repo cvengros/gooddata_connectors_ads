@@ -7,6 +7,7 @@ module GoodData
           super('Import Data',entity)
           self << DropTableForInputTask.new(@entity)
           self << CreateTableForInputTask.new(@entity)
+          self << SetTimezoneTask.new(@entity)
           files_to_process.each_with_index do |file,index|
             self << CopyFromLocalForInputTask.new(@entity,file,index)
           end

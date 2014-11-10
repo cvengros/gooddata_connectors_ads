@@ -61,7 +61,7 @@ module GoodData
         end
 
         def process_entity(entity_id,dependent_entities = nil)
-
+          Connection.disconnect # For connection refresh
           entity = @metadata.get_entity(entity_id)
           history = false
           if (entity.custom.include?("history"))
