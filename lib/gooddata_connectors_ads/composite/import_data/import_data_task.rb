@@ -11,6 +11,7 @@ module GoodData
           files_to_process.each_with_index do |file,index|
             self << CopyFromLocalForInputTask.new(@entity,file,index)
           end
+          self << AnalyzeStatisticsTask.new(@entity,true)
           set_history(history)
         end
 
