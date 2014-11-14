@@ -10,16 +10,17 @@ module GoodData
           Jdbc::DSS.load_driver
           Java.com.gooddata.dss.jdbc.driver.DssDriver
 
-          def set_up(instance_id,username,password)
+          def set_up(instance_id,username,password,server)
             @instance_id = instance_id
             @username = username
             @password = password
             @status = "ready"
-
+            @server = server
           end
 
           def connect
-            dss_jdbc_url = "jdbc:dss://secure.gooddata.com/gdc/dss/instances/#{@instance_id}"
+            dss_jdbc_url = "jdbc:dss://#{@server}/gdc/dss/instances/#{@instance_id}"
+            $log.info "Connecting to #{dss_jdbc_url}"
             @db = Sequel.connect(dss_jdbc_url, :username=> @username, :password=> @password)
             @status = "connected"
           end
