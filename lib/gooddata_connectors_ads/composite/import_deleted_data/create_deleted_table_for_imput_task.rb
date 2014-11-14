@@ -16,6 +16,11 @@ module GoodData
           fields += Helper.computed_fields(@entity,true,true)
           input["fields"] = fields
           @sql = Base::Templates.make("create_table",input)
+          if (!@entity.custom["computed_id"].nil?)
+            input["segmented_key"] = "#{@entity.custom["computed_id"]["fields"].join(",")}"
+          else
+            input["segmented_key"] = @entity.custom["id"]
+          end
         end
       end
     end

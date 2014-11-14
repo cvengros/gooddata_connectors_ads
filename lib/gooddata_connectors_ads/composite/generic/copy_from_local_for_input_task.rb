@@ -19,10 +19,11 @@ module GoodData
           input["fields"] =  @entity.get_enabled_fields
           input["filename"] = File.expand_path(@file)
           if (!@entity.custom["computed_id"].nil?)
-            case @entity.custom["computed_id"]["function"]
-              when "hash",nil
-                input["computed_id"] = "HASH(#{@entity.custom["computed_id"]["fields"].join(",")})"
+            elements = []
+            entity.custom["computed_id"]["fields"].each do |field|
+              elements << "COALESCE((#{field})::VARCHAR(255),'')"
             end
+            input["computed_id"] = "MD5(#{elements.join(" || ")})"
           end
           input["computed_fields"] = Helper.computed_fields(@entity,@history,@default,{"file" => @file,"index" => @index})
           input["skiped_rows"] = @entity.custom["skip_rows"] if @entity.custom.include?("skip_rows")

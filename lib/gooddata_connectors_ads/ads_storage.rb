@@ -1,6 +1,6 @@
 require 'sequel'
 require 'jdbc/dss'
-
+require "thread"
 
 module GoodData
   module Connectors
@@ -119,9 +119,16 @@ module GoodData
               end
             end
             if (!entity.custom["computed_id"].nil?)
-              input["fields"] << {"name" => "computed_id","type" => Metadata::BaseType.create("integer")}
+              input["fields"] << {"name" => "_COMPUTED_ID","type" => Metadata::BaseType.create("string-255")}
             end
             input["fields"] += Helper.computed_fields(entity,history)
+            if (!entity.custom["computed_id"].nil?)
+              input["segmented_key"] = "#{entity.custom["computed_id"]["fields"].join(",")}"
+            else
+              input["segmented_key"] = entity.custom["id"]
+            end
+
+
             Connection.db.run(Base::Templates.make("create_table",input))
           else
             # We have found the DB entity
