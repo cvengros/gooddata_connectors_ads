@@ -154,8 +154,14 @@ module GoodData
               execute(sql)
 
               # if there's something in the reject/except, raise an error
-              if File.size?(@generator.except_filename(filename)) || File.size?(@generator.reject_filename(filename))
-                raise "Some of the records were rejected: see #{filename}"
+              if (File.size?(@generator.except_filename(filename)) || File.size?(@generator.reject_filename(filename)))
+                if (! @params['ignore_rejected'])
+                  raise "Some of the records were rejected: see #{filename}"
+                end
+              else
+                # if the files are empty just delete them
+                File.delete(@generator.except_filename(filename))
+                File.delete(@generator.reject_filename(filename))
               end
             end
           end
